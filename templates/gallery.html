@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Gallery{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/stylegallery.css') }}">
+{% endblock %}
+{% block content %}
+<h2 class="gallery-title">Your Gallery</h2>
+<div class="gallery-grid">
+  {% for img in user_gallery %}
+    <div class="gallery-card">
+      <form action="{{ url_for('delete_image') }}" method="POST" class="delete-form">
+        <input type="hidden" name="img_id" value="{{ img._id }}">
+        <button type="submit" class="delete-btn" title="Delete">&times;</button>
+      </form>
+      <img src="data:image/png;base64,{{ img.data }}" alt="User Image">
+    </div>
+  {% endfor %}
+</div>
+
+
+
+<!-- Fullscreen Modal -->
+<div id="imgModal" class="modal" onclick="closeModal()">
+  <span class="close">&times;</span>
+  <img id="modalImage" src="" alt="Full Image">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function openModal(src) {
+    document.getElementById("modalImage").src = src;
+    document.getElementById("imgModal").style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("imgModal").style.display = "none";
+  }
+</script>
+{% endblock %}

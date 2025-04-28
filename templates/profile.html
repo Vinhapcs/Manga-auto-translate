@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile{% endblock %}
+{% block extra_styles %}
+<link href="{{ url_for('static', filename='css/styleprofile.css') }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="profile-container-1">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {% if session.user_id %}
+               {% set user = get_user() %}
+               {% if user and user.profile_picture %}
+                  <img src="{{ url_for('get_profile_image', username=user.username) }}" alt="Profile" class="profile-image">
+               {% else %}
+                  <img src="{{ url_for('static', filename='/img/default_profile.png') }}" alt="Default Profile" class="profile-image">
+               {% endif %}
+            {% else %}
+               <img src="{{ url_for('static', filename='/img/default_profile2.png') }}" alt="Default Profile" class="profile-image">
+            {% endif %}
+         </div>
+        <h1 class="profile-name">{{ user.full_name }}</h1>
+        <p class="profile-username">@{{ user.username }}</p>
+    </div>
+    
+    <div class="profile-details">
+        <div class="info-section">
+            <h2 class="section-title">Personal Information</h2>
+            <div class="info-item">
+                <div class="info-label">Email:</div>
+                <div class="info-value">{{ user.email }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Age:</div>
+                <div class="info-value">{{ user.age }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Member since:</div>
+                <div class="info-value">{{ user.created_at.strftime('%B %d, %Y') }}</div>
+            </div>
+        </div>
+        
+        {% if user.gallery and user.gallery|length > 0 %}
+        <div class="info-section">
+            <h2 class="section-title">Gallery</h2>
+            <p>{{ user.gallery|length }} images</p>
+            
+        </div>
+        {% else %}
+        <div class="info-section">
+            <h2 class="section-title">Gallery</h2>
+        <p>No images available.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

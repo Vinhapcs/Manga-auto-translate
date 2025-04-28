@@ -1,0 +1,86 @@
+<!-- templates/translate.html -->
+{% extends "base.html" %}
+
+{% block title %}Translate Manga{% endblock %}
+
+{% block content %}
+<div class="container">
+   <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Statistics Icon">
+   <form action="/translate" method="post" enctype="multipart/form-data" onsubmit="return updateHiddenInputs()">
+      <div class="select-wrapper">
+         <label for="language" class="translator-label">Language</label>
+         <div class="custom-select" id="language" tabindex="0">
+            <div class="select-box">
+               <span class="selected"></span>
+               <span class="icon">&#9660;</span>
+            </div>
+            <div class="options">
+               <span class="option">English</span>
+            </div>
+         </div>
+      </div>
+      <div class="select-wrapper">
+         <label for="translator" class="translator-label">Translator</label>
+         <div class="custom-select" id="translator" tabindex="0">
+            <div class="select-box">
+               <span class="selected"></span>
+               <span class="icon">&#9660;</span>
+            </div>
+            <div class="options">
+               <span class="option">Bing</span>
+               <span class="option">Google</span>
+               <span class="option">Baidu</span>
+               <span class="option">Opus-mt model</span>
+            </div>
+         </div>
+      </div>
+      <div class="select-wrapper">
+         <label for="font" class="translator-label">Font</label>
+         <div class="custom-select" id="font" tabindex="0">
+            <div class="select-box">
+               <span class="selected"></span>
+               <span class="icon">&#9660;</span>
+            </div>
+            <div class="options">
+               <span class="option">Animeace</span>
+               <span class="option">Mangat</span>
+               <span class="option">Arial</span>
+               <span class="option">Wildwords</span>
+               <span class="option">Felt Regular</span>
+            </div>
+         </div>
+      </div>
+      <input id="file-upload" type="file" name="file" accept=".jpg, .jpeg, .png" required>
+      <label for="file-upload" class="file">Upload Image</label>
+      <input type="hidden" id="selected_language" name="selected_language">
+      <input type="hidden" id="selected_translator" name="selected_translator">
+      <input type="hidden" id="selected_font" name="selected_font">
+      <button onclick="replaceGallery()">Replace Gallery</button>
+      <button type="submit">Upload</button>
+   </form>
+   <img id="loading-img" src="{{ url_for('static', filename='img/loading.gif') }}" alt="">
+   <p id="loading-p">Be patient, it might take some time!</p>
+</div>
+
+
+<script>
+   function replaceGallery() {
+     fetch("/replace_gallery", {
+       method: "POST",
+       headers: {
+         "Content-Type": "application/json"
+       },
+       body: JSON.stringify({
+         images: ["base64img1", "base64img2"]  // replace with your actual image data
+       })
+     })
+     .then(response => response.json())
+     .then(data => {
+       console.log("Response:", data);
+     })
+     .catch(error => {
+       console.error("Error:", error);
+     });
+   }
+ </script>
+{% endblock %}

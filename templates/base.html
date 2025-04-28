@@ -1,0 +1,47 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <title>{% block title %}Manga Translator{% endblock %}</title>
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+   {% block extra_styles %}{% endblock %}
+   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+<body>
+   <header>
+      <div class="profile-section">
+         <a href="/search" class="search-icon">
+            <i class="fas fa-search"></i>
+         </a>
+         <a href="/messages" class="message-icon">
+            <i class="fas fa-comment"></i>
+         </a>
+         <div class="profile-container">
+            {% if session.user_id %}
+               {% set user = get_user() %}
+               {% if user and user.profile_picture %}
+                  <img src="{{ url_for('get_profile_image', username=session.username) }}" alt="Profile" class="profile-image">
+               {% else %}
+                  <img src="{{ url_for('static', filename='/img/default_profile.png') }}" alt="Default Profile" class="profile-image">
+               {% endif %}
+            {% else %}
+               <img src="{{ url_for('static', filename='/img/default_profile2.png') }}" alt="Default Profile" class="profile-image">
+            {% endif %}
+         </div>
+      </div>
+      <a href="/" class="nav-links">Home</a>
+      <a href="/profile" class="nav-links">Profile</a>
+      <a href="/gallery" class="nav-links">Gallery</a>
+      <a href="/logout" class="nav-links">Log out</a>
+   </header>
+
+   {% block content %}{% endblock %}
+
+   <footer></footer>
+   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

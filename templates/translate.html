@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manga Translator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style2.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="image-container" style="position: relative;">
+            {% if uploaded_image %}
+            <img class="uploaded-image" id="translated-image" src="data:image/png;base64,{{ uploaded_image }}" alt="Translated Manga">
+            <div id="highlight-box" class="highlight-box"></div>
+            {% else %}
+            <p>No image uploaded.</p>
+            {% endif %}
+            <div id="selection-box" class="selection-box" style="display: none;"></div>
+            <button id="extract-text" class="button" style="display: none;">Extract Text</button>
+            <div class="icon-buttons">
+                <button class="icon-button" id="add-button">
+                    <img src="static/icons/add-icon.png" alt="Edit">
+                </button>
+            </div>
+        </div>
+        
+        <div class="side-menu">
+            <h3>📝 Translated Text</h3>
+            <ul class="bubble-list">
+                {% for bubble in bubble_texts %}
+                <li>
+                    <input type="text" 
+                           class="bubble-input" 
+                           data-index="{{ bubble.index }}" 
+                           value="{{ bubble.text }}" 
+                           x1="{{bubble.x1}}"
+                           x2="{{bubble.x2}}"
+                           y2="{{bubble.y2}}"
+                           y1="{{bubble.y1}}"
+                           readonly>
+                    <div class="bubble-controls">
+                        <div class="control-group">
+                            <div class="select-wrapper bubble-font">
+                                <div class="custom-select" tabindex="0">
+                                    <div class="select-box">
+                                        <span class="selected">Animeace</span>
+                                        <span class="icon">&#9660;</span>
+                                    </div>
+                                    <div class="options">
+                                        <span class="option">Animeace</span>
+                                        <span class="option">Mangat</span>
+                                        <span class="option">Arial</span>
+                                        <span class="option">Wildwords</span>
+                                        <span class="option">Felt Regular</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="select-wrapper bubble-size">
+                                <div class="custom-select" tabindex="0">
+                                    <div class="select-box">
+                                        <span class="selected">Medium</span>
+                                        <span class="icon">&#9660;</span>
+                                    </div>
+                                    <div class="options">
+                                        <span class="option">Small</span>
+                                        <span class="option selected">Medium</span>
+                                        <span class="option">Large</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="style-buttons">
+                            <button class="style-button bold" title="Bold">B</button>
+                            <button class="style-button italic" title="Italic">I</button>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            <a href="/" class="button green" id="save-image">Save Image</a>
+            <a href="/" class="button red">Go Back</a>
+            <button class="button apply" id="apply-changes" disabled>Apply</button>
+            <div class="select-wrapper">
+                <label for="font" class="translator-label">Default Font</label>
+                <div class="custom-select" id="font" tabindex="0">
+                   <div class="select-box">
+                      <span class="selected">Animeace</span>
+                      <span class="icon">&#9660;</span>
+                   </div>
+                   <div class="options">
+                    <span class="option">Animeace</span>
+                    <span class="option">Mangat</span>
+                    <span class="option">Arial</span>
+                    <span class="option">Wildwords</span>
+                    <span class="option">Felt Regular</span>
+                   </div>
+                </div>
+             </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const inputs = document.querySelectorAll(".bubble-input");
+    const applyButton = document.getElementById("apply-changes");    
+    let changes = {}; // Store changes
+    let selectMode = false;
+    // Initialize style buttons state
+    document.querySelectorAll('.style-button').forEach(button => {
+        button.setAttribute('data-active', 'false');
+        
+        button.addEventListener('click', function() {
+            const isActive = this.getAttribute('data-active') === 'true';
+            this.setAttribute('data-active', !isActive);
+            this.classList.toggle('active', !isActive);
+            
+            // Mark changes to enable apply button
+            const bubbleInput = this.closest('li').querySelector('.bubble-input');
+            const index = bubbleInput.dataset.index;
+            updateChanges(index);
+        });
+    });
+
+    // Function to update changes object and apply button state
+    function updateChanges(index) {
+        const bubbleItem = document.querySelector(`.bubble-input[data-index="${index}"]`).closest('li');
+        const bubbleInput = bubbleItem.querySelector('.bubble-input');
+        const bubbleFont = bubbleItem.querySelector('.bubble-font .selected').textContent;
+        const bubbleSize = bubbleItem.querySelector('.bubble-size .selected').textContent;
+        const isBold = bubbleItem.querySelector('.bold').getAttribute('data-active') === 'true';
+        const isItalic = bubbleItem.querySelector('.italic').getAttribute('data-active') === 'true';
+        
+        changes[index] = {
+            text: bubbleInput.value,
+            font: bubbleFont,
+            size: bubbleSize,
+            bold: isBold,
+            italic: isItalic
+        };
+        
+        applyButton.removeAttribute("disabled");
+    }
+
+    inputs.forEach(input => {
+        input.addEventListener("click", function () {
+            this.removeAttribute("readonly");
+            this.focus();
+        });
+
+        input.addEventListener("input", function () {
+            const index = this.dataset.index;
+            updateChanges(index);
+        });
+
+        input.addEventListener("blur", function () {
+            this.setAttribute("readonly", "true");
+        });
+    });
+
+    // Handle custom select for each bubble
+    initializeCustomSelects();
+
+    document.getElementById("apply-changes").addEventListener("click", function () {
+        const imageElement = document.getElementById("translated-image");  
+        const base64Image = imageElement.src.split(",")[1];  
+        const defaultFont = document.querySelector("#font .selected").textContent; 
+        
+        // Collect all bubble data with style information
+        const bubbles = Array.from(document.querySelectorAll(".bubble-input")).map(input => {
+            const index = input.dataset.index;
+            const bubbleItem = input.closest('li');
+            
+            return {
+                index: index,
+                text: input.value,
+                x1: input.getAttribute("x1"),
+                y1: input.getAttribute("y1"),
+                x2: input.getAttribute("x2"),
+                y2: input.getAttribute("y2"),
+                font: bubbleItem.querySelector('.bubble-font .selected').textContent,
+                size: bubbleItem.querySelector('.bubble-size .selected').textContent,
+                bold: bubbleItem.querySelector('.bold').getAttribute('data-active') === 'true',
+                italic: bubbleItem.querySelector('.italic').getAttribute('data-active') === 'true'
+            };
+        });
+
+        const requestData = { 
+            image_data: base64Image,
+            font: defaultFont.toLowerCase(),
+            bubble_texts: bubbles
+        };
+
+        console.log("Sending request data:", requestData); // Debug log
+
+        fetch("/update_bubbles", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Response:", data); 
+            if (data.updated_image) {
+                document.getElementById("translated-image").src = "data:image/png;base64," + data.updated_image;
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+
+    function initializeCustomSelects() {
+        const selectWrappers = document.querySelectorAll('.select-wrapper');
+
+        selectWrappers.forEach(wrapper => {
+            const selectBox = wrapper.querySelector('.custom-select');
+            const selectedText = selectBox.querySelector('.selected');
+            const options = selectBox.querySelector('.options');
+            const optionList = selectBox.querySelectorAll('.option');
+
+            // Toggle options display on select box click
+            selectBox.addEventListener('click', (e) => {
+                e.stopPropagation();
+                options.style.display = options.style.display === 'block' ? 'none' : 'block';
+                selectBox.classList.toggle('open');
+            });
+
+            // Update selected option and hide options on option click
+            optionList.forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectedText.textContent = option.textContent;
+                    optionList.forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    
+                    // Update changes if this is a bubble select
+                    if (wrapper.closest('li')) {
+                        const bubbleInput = wrapper.closest('li').querySelector('.bubble-input');
+                        const index = bubbleInput.dataset.index;
+                        updateChanges(index);
+                    }
+                });
+            });
+        });
+
+        // Hide all options when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.options').forEach(options => {
+                options.style.display = 'none';
+            });
+            document.querySelectorAll('.custom-select').forEach(select => {
+                select.classList.remove('open');
+            });
+        });
+    }
+
+    document.getElementById("save-image").addEventListener("click", (e) => {
+        e.preventDefault();
+        const uploadedImage = document.getElementById("translated-image").src.split(",")[1];
+        const a = document.createElement("a");
+        a.href = "data:image/png;base64," + uploadedImage;
+        a.download = "{{ name }}" + "_translated.png";
+        a.click();
+    });
+
+    document.getElementById("add-button").addEventListener("click", async () => {
+    const imageElement = document.getElementById("translated-image");
+
+    if (!imageElement) {
+        alert("No image to save.");
+        return;
+    }
+
+    // Extract the Base64 image data (remove 'data:image/png;base64,')
+    const imageData = imageElement.src.split(',')[1];
+
+    try {
+        const response = await fetch("/save_image", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ image: imageData })
+        });
+
+        const result = await response.json();
+        alert(result.message);
+    } catch (error) {
+        console.error("Error saving image:", error);
+        alert("Failed to save image.");
+    }
+});
+
+
+    let startX, startY, endX, endY;
+    const selectionBox = document.getElementById("selection-box");
+    const imageContainer = document.querySelector(".image-container");
+    const extractButton = document.getElementById("extract-text");
+    const translatedImage = document.getElementById("translated-image");
+
+    selectModeButton.addEventListener("click", () => {
+    selectMode = !selectMode;
+    selectModeButton.textContent = selectMode ? "Exit Select Mode" : "Select Mode";
+});
+
+translatedImage.addEventListener("mousedown", (e) => {
+    if (!selectMode) return;
+    
+    startX = e.offsetX;
+    startY = e.offsetY;
+    selectionBox.style.left = startX + "px";
+    selectionBox.style.top = startY + "px";
+    selectionBox.style.width = "0px";
+    selectionBox.style.height = "0px";
+    selectionBox.style.display = "block";
+
+    function onMouseMove(e) {
+        endX = e.offsetX;
+        endY = e.offsetY;
+        selectionBox.style.width = Math.abs(endX - startX) + "px";
+        selectionBox.style.height = Math.abs(endY - startY) + "px";
+        selectionBox.style.left = Math.min(startX, endX) + "px";
+        selectionBox.style.top = Math.min(startY, endY) + "px";
+    }
+
+    function onMouseUp() {
+        imageContainer.removeEventListener("mousemove", onMouseMove);
+        imageContainer.removeEventListener("mouseup", onMouseUp);
+        extractButton.style.display = "block";
+        extractButton.style.left = selectionBox.style.left;
+        extractButton.style.top = (parseInt(selectionBox.style.top) + parseInt(selectionBox.style.height) + 5) + "px";
+    }
+
+    imageContainer.addEventListener("mousemove", onMouseMove);
+    imageContainer.addEventListener("mouseup", onMouseUp);
+});
+
+extractButton.addEventListener("click", () => {
+    const scaleX = translatedImage.naturalWidth / translatedImage.clientWidth;
+    const scaleY = translatedImage.naturalHeight / translatedImage.clientHeight;
+
+    const croppedCoords = {
+        x1: Math.round(startX * scaleX),
+        y1: Math.round(startY * scaleY),
+        x2: Math.round(endX * scaleX),
+        y2: Math.round(endY * scaleY),
+    };
+
+    fetch("/ocr_extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(croppedCoords)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.new_bubble) {
+            location.reload();  // Reload template with updated bubbles
+        }
+    })
+    .catch(error => console.error("Error:", error));
+
+    selectionBox.style.display = "none";
+    extractButton.style.display = "none";
+});
+});
+</script>
+</body>
+</html>
